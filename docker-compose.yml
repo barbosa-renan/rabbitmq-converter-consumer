@@ -18,95 +18,95 @@ services:
     networks:
       - consumer
 
-retryworkerservice:
-  image: ${DOCKER_REGISTRY-}retryworkerservice
-  build:
-    context: .
-    dockerfile: RetryWorkerService/DockerFile
-  environment:
-    RABBITMQ__RETRYQUEUE: customer_retry_queue;converter_retry_queue
-    RABBITMQ__PREFECTHCOUNT: 10
-    RABBITMQ__MAXRETRYATTEMPTS: 2
-    RABBITMQ__HOSTNAME: rabbitmq
-    RABBITMQ__PORT: 5672
-    RABBITMQ__USERNAME: mc
-    RABBITMQ__PASSWORD: mc2
-    RABBITMQ__VIRTUALHOST: main
-    RABBITMQ__ClientProviderName: RetryService
-  networks:
-    - consumer
-  depends_on:
-    - consumerworkerservice
+  retryworkerservice:
+    image: ${DOCKER_REGISTRY-}retryworkerservice
+    build:
+      context: .
+      dockerfile: RetryWorkerService/DockerFile
+    environment:
+      RABBITMQ__RETRYQUEUE: customer_retry_queue;converter_retry_queue
+      RABBITMQ__PREFECTHCOUNT: 10
+      RABBITMQ__MAXRETRYATTEMPTS: 2
+      RABBITMQ__HOSTNAME: rabbitmq
+      RABBITMQ__PORT: 5672
+      RABBITMQ__USERNAME: mc
+      RABBITMQ__PASSWORD: mc2
+      RABBITMQ__VIRTUALHOST: main
+      RABBITMQ__ClientProviderName: RetryService
+    networks:
+      - consumer
+    depends_on:
+      - consumerworkerservice
 
-rabbitmq:
-  hostname: rabbitmq1
-  build:
-    context: ./rabbitmq
-  ports:
-    - "15672:15672" #management
-    - "5672:5672" #AMQP
-    - "15692:15692" #Prometheus
-  volumes:
-    - mq_data: /var/lib/rabbitmq/mnesia
-  networks:
-    - consumer
+  rabbitmq:
+    hostname: rabbitmq1
+    build:
+      context: ./rabbitmq
+    ports:
+      - "15672:15672" #management
+      - "5672:5672" #AMQP
+      - "15692:15692" #Prometheus
+    volumes:
+      - mq_data:/var/lib/rabbitmq/mnesia
+    networks:
+      - consumer
 
-converterapi:
-  image: ${DOCKER_REGISTRY-}converterapi
-  build:
-    context: .
-    dockerfile: ConverterAPI/DockerFile
-  ports:
-    - 80:80
-    - 443:443
-  environment:
-    RABBITMQ__HOSTNAME: rabbitmq
-    RABBITMQ__PORT: 5672
-    RABBITMQ__USERNAME: mc
-    RABBITMQ__PASSWORD: mc2
-    RABBITMQ__VIRTUALHOST: main
-    RABBITMQ__AutomaticRecoveryEnabled: true
-    RABBITMQ__TopologyRecoveryEnabled: true
-    RABBITMQ__RecoveryInterval: 00:00:20
-    RABBITMQ__HandshakeContinuationTimeout: 00:00:40
-    RABBITMQ__DefaultHeartbeat: 00:02:00
-    RABBITMQ__ClientProvidedName: webhook
-  depends_on:
-    - consumerworkerservice
+  converterapi:
+    image: ${DOCKER_REGISTRY-}converterapi
+    build:
+      context: .
+      dockerfile: ConverterAPI/DockerFile
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      RABBITMQ__HOSTNAME: rabbitmq
+      RABBITMQ__PORT: 5672
+      RABBITMQ__USERNAME: mc
+      RABBITMQ__PASSWORD: mc2
+      RABBITMQ__VIRTUALHOST: main
+      RABBITMQ__AutomaticRecoveryEnabled: true
+      RABBITMQ__TopologyRecoveryEnabled: true
+      RABBITMQ__RecoveryInterval: 00:00:20
+      RABBITMQ__HandshakeContinuationTimeout: 00:00:40
+      RABBITMQ__DefaultHeartbeat: 00:02:00
+      RABBITMQ__ClientProvidedName: webhook
+    depends_on:
+      - consumerworkerservice
 
-jaeger:
-  image: jaegertracing/all-in-one:latest
-  environment:
-    - COLLECTOR_ZIPKIN_HOST_PORT=:9411
-  ports:
-    - 5775:5775/udp
-    - 6831:6831/udp
-    - 6832:6832/udp
-    - 5778:5778
-    - 16686:16686
-    - 14268:14268
-    - 14250:14250
-  # - 9411:9411
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    ports:
+      - 5775:5775/udp
+      - 6831:6831/udp
+      - 6832:6832/udp
+      - 5778:5778
+      - 16686:16686
+      - 14268:14268
+      - 14250:14250
+    # - 9411:9411
 
-prometheus:
-  image: prom/prometheus
-  ports:
-    - "9090:9090" #default
-  volumes:
-    - prometheus_data:/prometheus
-    - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-  networks:
-    - consumer
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090" #default
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - consumer
 
-grafana:
-  image: grafana/grafana:8.0.5-ubuntu
-  environment: { "TZ": "America/Sao_Paulo" }
-  ports:
-    - "3000:3000" #habilitado visualizacao no browser
-  volumes:
-    - ./grafana/data/:/var/lib/grafana
-  networks:
-    - consumer
+  grafana:
+   image: grafana/grafana:8.0.5-ubuntu
+   environment: { "TZ": "America/Sao_Paulo" }
+   ports:
+     - "3000:3000" #habilitado visualizacao no browser
+   volumes:
+     - ./grafana/data/:/var/lib/grafana
+   networks:
+     - consumer
 
 volumes:
   mq_data:
